@@ -1,0 +1,424 @@
+-- ==========================================
+-- โหลด Rayfield UI Library
+-- ==========================================
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+
+-- ตัวแปรระบบ Roblox
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local RunService = game:GetService("RunService")
+local CoreGui = game:GetService("CoreGui")
+local Camera = workspace.CurrentCamera
+
+-- สร้าง Window หลัก
+local Window = Rayfield:CreateWindow({
+   Name = "phakin Hub | Clean Edition",
+   LoadingTitle = "phakin Hub Loading...",
+   LoadingSubtitle = "by phakin",
+   ConfigurationSaving = { Enabled = false },
+   Discord = { Enabled = false },
+   KeySystem = false
+})
+
+-- ==========================================
+-- ปุ่มลอย เปิด/ปิด UI บนหน้าจอ
+-- ==========================================
+local parentGui = (gethui and gethui()) or CoreGui or LocalPlayer:WaitForChild("PlayerGui")
+
+if parentGui:FindFirstChild("phakin_ToggleUI") then
+    parentGui.phakin_ToggleUI:Destroy()
+end
+
+local toggleScreen = Instance.new("ScreenGui")
+toggleScreen.Name = "phakin_ToggleUI"
+toggleScreen.ResetOnSpawn = false
+toggleScreen.Parent = parentGui
+
+local toggleBtn = Instance.new("TextButton")
+toggleBtn.Name = "ToggleButton"
+toggleBtn.Parent = toggleScreen
+toggleBtn.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
+toggleBtn.Position = UDim2.new(0, 15, 0.4, 0)
+toggleBtn.Size = UDim2.new(0, 95, 0, 35)
+toggleBtn.Font = Enum.Font.SourceSansBold
+toggleBtn.Text = "เปิด/ปิด UI"
+toggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+toggleBtn.TextSize = 14
+toggleBtn.Active = true
+toggleBtn.Draggable = true
+
+local corner = Instance.new("UICorner")
+corner.CornerRadius = UDim.new(0, 6)
+corner.Parent = toggleBtn
+
+local uiVisible = true
+toggleBtn.MouseButton1Click:Connect(function()
+    uiVisible = not uiVisible
+    local coreApp = parentGui:FindFirstChild("Rayfield") or CoreGui:FindFirstChild("Rayfield")
+    if coreApp then
+        coreApp.Enabled = uiVisible
+    end
+end)
+
+-- ==========================================
+-- 🔪 1. แท็บ MM2 (Murder Mystery 2 Hub)
+-- ==========================================
+local MM2Tab = Window:CreateTab("MM2 Mode", 4483362458)
+MM2Tab:CreateSection("ระบบช่วยเล่น Murder Mystery 2")
+
+local autoGun = false
+local autoCoin = false
+local roleEsp = false
+
+local function getMM2Roles()
+    local murderer, sheriff = nil, nil
+    for _, p in pairs(Players:GetPlayers()) do
+        if p.Character then
+            if p.Backpack:FindFirstChild("Knife") or p.Character:FindFirstChild("Knife") then
+                murderer = p
+            elseif p.Backpack:FindFirstChild("Gun") or p.Character:FindFirstChild("Gun") then
+                sheriff = p
+            end
+        end
+    end
+    return murderer, sheriff
+end
+
+-- 1. ดูบทบาทผู้เล่น (Role ESP)
+MM2Tab:CreateToggle({
+   Name = "ดูบทบาทผู้เล่น (Show Roles ESP)",
+   CurrentValue = false,
+   Flag = "MM2RoleESP",
+   Callback = function(Value)
+      roleEsp = Value
+      if Value then
+          task.spawn(function()
+              while roleEsp do
+                  local m, s = getMM2Roles()
+                  for _, p in pairs(Players:GetPlayers()) do
+                      if p.Character and p ~= LocalPlayer then
+                          local hl = p.Character:FindFirstChild("MM2_Role_HL") or Instance.new("Highlight")
+                          hl.Name = "MM2_Role_HL"
+                          hl.Parent = p.Character
+                          if p == m then
+                              hl.FillColor = Color3.fromRGB(255, 0, 0)
+                          elseif p == s then
+                              hl.FillColor = Color3.fromRGB(0, 100, 255)
+                          else
+                              hl.FillColor = Color3.fromRGB(0, 255, 0)
+                          end
+                          hl.Enabled = roleEsp
+                      end
+                  end
+                  task.wait(1)
+              end
+          end)
+      end
+   end,
+})
+
+-- 2. กดปุ่มเล็งเป้าใส่ฆาตกร (Snap Aim Murderer)
+MM2Tab:CreateButton({
+   Name = "🎯 กดเล็งเป้าใส่ฆาตกร (Snap Aim Murderer)",
+   Callback = function()
+      local murderer, _ = getMM2Roles()
+      if murderer and murderer.Character and murderer.Character:FindFirstChild("Head") then
+          local head = murderer.Character.Head
+          local gun = LocalPlayer.Backpack:FindFirstChild("Gun")
+          if gun and LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then
+              LocalPlayer.Character:FindFirstChildOfClass("Humanoid"):EquipTool(gun)
+          end
+          Camera.CFrame = CFrame.new(Camera.CFrame.Position, head.Position)
+      else
+          Rayfield:Notify({
+             Title = "ระบบ MM2",
+             Content = "ยังไม่พบฆาตกร หรือฆาตกรยังไม่ถือมีด",
+             Duration = 2.5,
+             Image = 4483362458,
+          })
+      end
+   end,
+})
+
+-- 3. ออโต้เก็บปืนที่ตก
+MM2Tab:CreateToggle({
+   Name = "ออโต้เก็บปืนที่ตก (Auto Grab Gun)",
+   CurrentValue = false,
+   Flag = "MM2AutoGun",
+   Callback = function(Value)
+      autoGun = Value
+      if Value then
+          task.spawn(function()
+              while autoGun do
+                  RunService.Heartbeat:Wait()
+                  local gunDrop = workspace:FindFirstChild("GunDrop", true)
+                  if gunDrop and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                      LocalPlayer.Character.HumanoidRootPart.CFrame = gunDrop.CFrame
+                  end
+              end
+          end)
+      end
+   end,
+})
+
+-- 4. ออโต้เก็บเหรียญ
+MM2Tab:CreateToggle({
+   Name = "เก็บเหรียญอัตโนมัติ (Auto Farm Coins)",
+   CurrentValue = false,
+   Flag = "MM2AutoCoin",
+   Callback = function(Value)
+      autoCoin = Value
+      if Value then
+          task.spawn(function()
+              while autoCoin do
+                  task.wait(0.2)
+                  local coinContainer = workspace:FindFirstChild("CoinContainer", true)
+                  if coinContainer and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                      for _, coin in pairs(coinContainer:GetChildren()) do
+                          if not autoCoin then break end
+                          if coin:IsA("BasePart") then
+                              LocalPlayer.Character.HumanoidRootPart.CFrame = coin.CFrame
+                              task.wait(0.1)
+                          end
+                      end
+                  end
+              end
+          end)
+      end
+   end,
+})
+
+-- ==========================================
+-- 🏃 2. แท็บผู้เล่น (Player & Movement)
+-- ==========================================
+local PlayerTab = Window:CreateTab("ผู้เล่น", 4483362458)
+PlayerTab:CreateSection("ปรับแต่งตัวละคร")
+
+local WalkSpeedSlider = PlayerTab:CreateSlider({
+   Name = "ความเร็วเดิน (WalkSpeed)",
+   Range = {16, 200},
+   Increment = 1,
+   Suffix = "Speed",
+   CurrentValue = 16,
+   Flag = "WalkSpeedSlider",
+   Callback = function(Value)
+      if LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then
+          LocalPlayer.Character:FindFirstChildOfClass("Humanoid").WalkSpeed = Value
+      end
+   end,
+})
+
+local JumpPowerSlider = PlayerTab:CreateSlider({
+   Name = "แรงกระโดดสูง (JumpPower)",
+   Range = {50, 400},
+   Increment = 5,
+   Suffix = "Power",
+   CurrentValue = 50,
+   Flag = "JumpPowerSlider",
+   Callback = function(Value)
+      if LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then
+          local hum = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+          hum.UseJumpPower = true
+          hum.JumpPower = Value
+      end
+   end,
+})
+
+PlayerTab:CreateButton({
+   Name = "รีเซ็ตค่าเดิม",
+   Callback = function()
+      if LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then
+          local hum = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+          hum.WalkSpeed = 16
+          hum.JumpPower = 50
+          WalkSpeedSlider:Set(16)
+          JumpPowerSlider:Set(50)
+      end
+   end,
+})
+
+-- ==========================================
+-- 🚀 3. แท็บวาร์ป & ระบบ Fling แบบปรับปรุงแรงปะทะ
+-- ==========================================
+local TeleTab = Window:CreateTab("วาร์ป & Fling", 4483362458)
+TeleTab:CreateSection("ระบบ Fling & Teleport")
+
+local targetPlayerName = ""
+local flingEnabled = false
+
+local function getOtherPlayers()
+    local tbl = {}
+    for _, p in pairs(Players:GetPlayers()) do
+        if p ~= LocalPlayer then table.insert(tbl, p.Name) end
+    end
+    if #tbl == 0 then table.insert(tbl, "ไม่มีผู้เล่นอื่น") end
+    return tbl
+end
+
+local PlayerDropdown = TeleTab:CreateDropdown({
+   Name = "เลือกผู้เล่นเป้าหมาย",
+   Options = getOtherPlayers(),
+   CurrentOption = getOtherPlayers()[1],
+   Flag = "TargetDropdown",
+   Callback = function(Option)
+      targetPlayerName = type(Option) == "table" and Option[1] or Option
+   end,
+})
+
+TeleTab:CreateButton({
+   Name = "รีเฟรชรายชื่อผู้เล่น",
+   Callback = function() PlayerDropdown:Set(getOtherPlayers()) end,
+})
+
+TeleTab:CreateButton({
+   Name = "วาร์ปไปหาผู้เล่นที่เลือก",
+   Callback = function()
+      local target = Players:FindFirstChild(targetPlayerName)
+      if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
+          if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+              LocalPlayer.Character.HumanoidRootPart.CFrame = target.Character.HumanoidRootPart.CFrame
+          end
+      end
+   end,
+})
+
+-- ระบบ Fling ชนกระเด็นจริง (เป้าหมายปลิว ตัวเรากลับตำแหน่งเดิม)
+TeleTab:CreateToggle({
+   Name = "ชนกระเด็น (Super Fling)",
+   CurrentValue = false,
+   Flag = "FlingTargetToggle",
+   Callback = function(Value)
+      flingEnabled = Value
+      if Value then
+          task.spawn(function()
+              local myChar = LocalPlayer.Character
+              if not myChar or not myChar:FindFirstChild("HumanoidRootPart") then return end
+              local myHRP = myChar.HumanoidRootPart
+              local oldCFrame = myHRP.CFrame
+
+              while flingEnabled do
+                  RunService.Heartbeat:Wait()
+                  local target = Players:FindFirstChild(targetPlayerName)
+                  if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
+                      local tHRP = target.Character.HumanoidRootPart
+                      
+                      -- อัปเดตความเร็วเชิงมุมและเชิงเส้นระดับสูงเพื่อส่งแรงชน
+                      myHRP.AssemblyAngularVelocity = Vector3.new(999999, 999999, 999999)
+                      myHRP.AssemblyLinearVelocity = Vector3.new(999999, 999999, 999999)
+                      
+                      -- สลับวาร์ปชนเป้าหมายในระยะเผาขนแบบสุ่มทิศทาง
+                      myHRP.CFrame = tHRP.CFrame * CFrame.new(math.random(-1, 1), math.random(-1, 1), math.random(-1, 1)) * CFrame.Angles(math.rad(math.random(-360, 360)), math.rad(math.random(-360, 360)), 0)
+                  end
+              end
+
+              -- คืนค่าความเร็วปกติและกลับตำแหน่งเดิมทันทีที่ปิด
+              myHRP.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
+              myHRP.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+              myHRP.Velocity = Vector3.new(0, 0, 0)
+              myHRP.RotVelocity = Vector3.new(0, 0, 0)
+              myHRP.CFrame = oldCFrame
+          end)
+      end
+   end,
+})
+
+-- ==========================================
+-- 🎯 4. แท็บระบบเล็งเป้า (Aimbot)
+-- ==========================================
+local AimTab = Window:CreateTab("ระบบเล็ง (Aimbot)", 4483362458)
+AimTab:CreateSection("ตั้งค่า Aimbot")
+
+local aimbotEnabled = false
+local fovRadius = 150
+
+local fovCircle = Drawing.new("Circle")
+fovCircle.Visible = false
+fovCircle.Radius = fovRadius
+fovCircle.Color = Color3.fromRGB(255, 0, 0)
+fovCircle.Thickness = 1.5
+fovCircle.Filled = false
+fovCircle.Transparency = 1
+
+local function getClosestPlayer()
+    local closestPlayer = nil
+    local shortestDistance = fovRadius
+
+    for _, plr in pairs(Players:GetPlayers()) do
+        if plr ~= LocalPlayer and plr.Character and plr.Character:FindFirstChild("Head") and plr.Character:FindFirstChildOfClass("Humanoid").Health > 0 then
+            local targetPart = plr.Character.Head
+            local screenPos, onScreen = Camera:WorldToViewportPoint(targetPart.Position)
+
+            if onScreen then
+                local mousePos = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
+                local distance = (Vector2.new(screenPos.X, screenPos.Y) - mousePos).Magnitude
+
+                if distance < shortestDistance then
+                    shortestDistance = distance
+                    closestPlayer = targetPart
+                end
+            end
+        end
+    end
+    return closestPlayer
+end
+
+AimTab:CreateToggle({
+   Name = "เปิดใช้งาน Aimbot (Camera Lock)",
+   CurrentValue = false,
+   Flag = "AimbotToggle",
+   Callback = function(Value) aimbotEnabled = Value end,
+})
+
+AimTab:CreateToggle({
+   Name = "แสดงวงกลมเล็ง (Show FOV Circle)",
+   CurrentValue = false,
+   Flag = "FOVVIsibleToggle",
+   Callback = function(Value) fovCircle.Visible = Value end,
+})
+
+AimTab:CreateSlider({
+   Name = "ขนาดวงกลมเล็ง (FOV Radius)",
+   Range = {50, 500},
+   Increment = 10,
+   Suffix = "px",
+   CurrentValue = 150,
+   Flag = "FOVSlider",
+   Callback = function(Value)
+      fovRadius = Value
+      fovCircle.Radius = Value
+   end,
+})
+
+RunService.RenderStepped:Connect(function()
+    fovCircle.Position = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
+    if aimbotEnabled then
+        local target = getClosestPlayer()
+        if target then
+            Camera.CFrame = CFrame.new(Camera.CFrame.Position, target.Position)
+        end
+    end
+end)
+
+-- ==========================================
+-- ⚙️ 5. แท็บทั่วไป (Misc)
+-- ==========================================
+local MiscTab = Window:CreateTab("ทั่วไป", 4483362458)
+MiscTab:CreateSection("ฟังก์ชันเสริม")
+
+local noclipEnabled = false
+MiscTab:CreateToggle({
+   Name = "เดินทะลุกำแพง (Noclip)",
+   CurrentValue = false,
+   Flag = "NoclipToggle",
+   Callback = function(Value) noclipEnabled = Value end,
+})
+
+RunService.Stepped:Connect(function()
+    if noclipEnabled and LocalPlayer.Character then
+        for _, part in pairs(LocalPlayer.Character:GetDescendants()) do
+            if part:IsA("BasePart") then
+                part.CanCollide = false
+            end
+        end
+    end
+end)
