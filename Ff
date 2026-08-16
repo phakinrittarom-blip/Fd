@@ -1,0 +1,140 @@
+-- ==========================================
+-- โหลด Rayfield UI Library
+-- ==========================================
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local RunService = game:GetService("RunService")
+local Camera = workspace.CurrentCamera
+
+local Window = Rayfield:CreateWindow({
+   Name = "phakin Hub | Full Version",
+   LoadingTitle = "Loading phakin Hub...",
+   ConfigurationSaving = { Enabled = false },
+   KeySystem = false
+})
+
+-- ==========================================
+-- 🏃 แท็บผู้เล่น (WalkSpeed & JumpPower)
+-- ==========================================
+local PlayerTab = Window:CreateTab("ผู้เล่น")
+
+PlayerTab:CreateSlider({
+   Name = "ความเร็วเดิน (WalkSpeed)",
+   Range = {16, 200},
+   Increment = 1,
+   CurrentValue = 16,
+   Callback = function(v)
+      if LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then
+          LocalPlayer.Character.Humanoid.WalkSpeed = v
+      end
+   end,
+})
+
+PlayerTab:CreateSlider({
+   Name = "แรงกระโดด (JumpPower)",
+   Range = {50, 400},
+   Increment = 5,
+   CurrentValue = 50,
+   Callback = function(v)
+      if LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then
+          LocalPlayer.Character.Humanoid.UseJumpPower = true
+          LocalPlayer.Character.Humanoid.JumpPower = v
+      end
+   end,
+})
+
+-- ==========================================
+-- 🔪 แท็บ MM2 (Murder Mystery 2)
+-- ==========================================
+local MM2Tab = Window:CreateTab("MM2")
+
+MM2Tab:CreateButton({
+   Name = "เล็งฆาตกร (Aim Murderer)",
+   Callback = function()
+      for _, p in pairs(Players:GetPlayers()) do
+          if p.Character and (p.Backpack:FindFirstChild("Knife") or p.Character:FindFirstChild("Knife")) then
+              Camera.CFrame = CFrame.new(Camera.CFrame.Position, p.Character.Head.Position)
+          end
+      end
+   end,
+})
+
+-- ==========================================
+-- 🚀 แท็บวาร์ป & Fling
+-- ==========================================
+local WarpTab = Window:CreateTab("วาร์ป & Fling")
+local targetName = ""
+
+local Dropdown = WarpTab:CreateDropdown({
+   Name = "เลือกผู้เล่น",
+   Options = {},
+   Callback = function(o) targetName = o end,
+})
+
+WarpTab:CreateButton({
+   Name = "รีเฟรชรายชื่อ",
+   Callback = function()
+      local list = {}
+      for _, p in pairs(Players:GetPlayers()) do
+          if p ~= LocalPlayer then table.insert(list, p.Name) end
+      end
+      Dropdown:Set(list)
+   end,
+})
+
+WarpTab:CreateButton({
+   Name = "วาร์ปไปหา",
+   Callback = function()
+      local target = Players:FindFirstChild(targetName)
+      if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
+          LocalPlayer.Character.HumanoidRootPart.CFrame = target.Character.HumanoidRootPart.CFrame
+      end
+   end,
+})
+
+local flingActive = false
+WarpTab:CreateToggle({
+   Name = "ชนกระเด็น (Super Fling)",
+   CurrentValue = false,
+   Callback = function(v)
+      flingActive = v
+      task.spawn(function()
+          while flingActive do
+              RunService.Heartbeat:Wait()
+              local target = Players:FindFirstChild(targetName)
+              if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
+                  LocalPlayer.Character.HumanoidRootPart.CFrame = target.Character.HumanoidRootPart.CFrame * CFrame.Angles(math.random(), math.random(), 0)
+                  LocalPlayer.Character.HumanoidRootPart.Velocity = Vector3.new(9e9, 9e9, 9e9)
+              end
+          end
+      end)
+   end,
+})
+
+-- ==========================================
+-- 🎯 แท็บ Aimbot
+-- ==========================================
+local AimTab = Window:CreateTab("Aimbot")
+local aimEnabled = false
+
+AimTab:CreateToggle({
+   Name = "เปิดใช้งาน Aimbot",
+   CurrentValue = false,
+   Callback = function(v) aimEnabled = v end,
+})
+
+RunService.RenderStepped:Connect(function()
+    if aimEnabled then
+        local closest, dist = nil, 500
+        for _, p in pairs(Players:GetPlayers()) do
+            if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("Head") then
+                local pos, onScreen = Camera:WorldToViewportPoint(p.Character.Head.Position)
+                local mag = (Vector2.new(pos.X, pos.Y) - Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)).Magnitude
+                if mag < dist then dist = mag closest = p.Character.Head end
+            end
+        end
+        if closest then Camera.CFrame = CFrame.new(Camera.CFrame.Position, closest.Position) end
+    end
+end)
